@@ -1,0 +1,120 @@
+(***************************************************************************************************************)
+(******                       This is the FeynRules mod-file for the 2HDM                                 ******)
+(******                                                                                                   ******)
+(******     Authors: C. Duhr, M. Herquet, C.Degrande                                                      ******)
+(******                                                                                                   ******)
+(***************************************************************************************************************)
+
+M$ModelName = "2HDM";
+
+(* The Feynman gauge switch allows to activiate the QCD ghosts (needed, e.g. by CalcHep)   *)
+   
+M$Information = {Authors -> {"C. Duhr", "M. Herquet","C. Degrande"}, 
+             Version -> "1.2",
+             Date -> "12. 10. 2015",
+             Institutions -> {"Universite catholique de Louvain (CP3)", "NIKHEF Theory Dept.","IPPP"},
+             URLs  -> "http://feynrules.phys.ucl.ac.be/view/Main/2HDM",
+             Emails -> {"claude.duhr@uclouvain.be", "mherquet@nikhef.nl","celine.degrande@durham.ac.uk"}};
+
+FeynmanGauge = True;
+
+FR$LoopSwitches = {{Gf, MW}};
+FR$RmDblExt = { ymb -> MB, ymc -> MC, ymdo -> MD, yme -> Me, ymm -> MMU, yms -> MS, ymt -> MT, ymtau -> MTA, ymup -> MU};
+
+(*v1.2 bug fix in the scalar potential*)
+
+(******* Index definitions ********)
+
+IndexRange[Index[SU2W      ]] = Unfold[Range[3]]; 
+IndexRange[Index[SU2D      ]] = Unfold[Range[2]];
+IndexRange[Index[Gluon     ]] = NoUnfold[Range[8]];
+IndexRange[Index[Colour    ]] = NoUnfold[Range[3]]; 
+IndexRange[Index[Generation]] = Range[3];
+IndexRange[Index[Higgs     ]] = Unfold[Range[3]];
+
+
+IndexStyle[SU2W,       j];
+IndexStyle[SU2D,       k];
+IndexStyle[Gluon,      a];
+IndexStyle[Colour,     m];
+IndexStyle[Generation, f];
+IndexStyle[Higgs,      j];
+
+
+(* ************************** *)
+(* *** Interaction orders *** *)
+(* ***  (as used by mg5)  *** *)
+(* ************************** *)
+
+M$InteractionOrderHierarchy = {
+  {QCD, 1},
+  {QED, 2}
+};
+
+
+
+(* ************************** *)
+(* *****      vevs      ***** *)
+(* ************************** *)
+M$vevs = { {Phi1[2],vev} };
+
+
+(******* Gauge parameters (for FeynArts) ********)
+
+GaugeXi[ V[1] ] = GaugeXi[A];
+GaugeXi[ V[2] ] = GaugeXi[Z];
+GaugeXi[ V[3] ] = GaugeXi[W];
+GaugeXi[ V[4] ] = GaugeXi[G];
+GaugeXi[ S[1] ] = 1;
+GaugeXi[ S[2] ] = GaugeXi[Z];
+GaugeXi[ S[3] ] = GaugeXi[W];
+GaugeXi[ U[1] ] = GaugeXi[A];
+GaugeXi[ U[2] ] = GaugeXi[Z];
+GaugeXi[ U[31] ] = GaugeXi[W];
+GaugeXi[ U[32] ] = GaugeXi[W];
+GaugeXi[ U[4] ] = GaugeXi[G];
+
+
+(************** Gauge Groups ******************)
+
+M$GaugeGroups = {
+  U1Y  == { 
+    Abelian          -> True,  
+    CouplingConstant -> g1, 
+    GaugeBoson       -> B, 
+    Charge           -> Y
+  },
+  SU2L == { 
+    Abelian           -> False, 
+    CouplingConstant  -> gw, 
+    GaugeBoson        -> Wi, 
+    StructureConstant -> Eps, 
+    Representations   -> {Ta,SU2D}, 
+    Definitions       -> {Ta[a_,b_,c_]->PauliSigma[a,b,c]/2, FSU2L[i_,j_,k_]:> I Eps[i,j,k]}
+  },
+  SU3C == { 
+    Abelian           -> False, 
+    CouplingConstant  -> gs, 
+    GaugeBoson        -> G,
+    StructureConstant -> f, 
+    Representations   -> {T,Colour}, 
+    SymmetricTensor   -> dSUN
+  } 
+};
+
+Get["Params.fr"];
+
+Get["SMParts.fr"];
+
+Get["Lag.fr"];
+
+Get["HiggsBasis.fr"];
+
+
+M$Parameters = Join[M$Parameters, M$ParametersHiggsBasis];
+
+M$ClassesDescription = Join[M$ClassesDescription, M$HiggsFields];
+
+
+
+

@@ -1,0 +1,23 @@
+(**********************************************************)
+(* Extension of the 2HDM to include beta                  *)
+(* This parameter has no influence unless typeI or typeII *)
+(* restriction are used                                   *)
+(**********************************************************)
+
+Get["2HDM.fr"];
+
+M$ParametersBetaBasis = {
+
+tanbeta == {
+        ParameterType -> External,
+        Value -> 1.53748,
+        Description -> "vev ratio"},
+
+sinbma == {
+        ParameterType -> External,
+        Value -> 0.1,
+        Description -> "sin of beta minus alpha"}
+
+};
+
+M$Parameters = Join[M$Parameters, M$ParametersBetaBasis];

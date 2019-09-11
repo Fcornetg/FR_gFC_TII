@@ -1,0 +1,90 @@
+
+
+(*****************************************************************************************)
+
+(* SM Lagrangian *)
+
+(******************** Gauge F^2 Lagrangian terms*************************)
+(*Sign convention from Lagrangian in between Eq. (A.9) and Eq. (A.10) of Peskin & Schroeder.*)
+LGauge := Block[{mu,nu,ii,aa}, 
+  ExpandIndices[-1/4 FS[B,mu,nu] FS[B,mu,nu] - 1/4 FS[Wi,mu,nu,ii] FS[Wi,mu,nu,ii] - 1/4 FS[G,mu,nu,aa] FS[G,mu,nu,aa], FlavorExpand->SU2W]];
+
+
+(********************* Fermion Lagrangian terms*************************)
+(*Sign convention from Lagrangian in between Eq. (A.9) and Eq. (A.10) of Peskin & Schroeder.*)
+LFermions := Block[{mu}, 
+  ExpandIndices[I*(
+    QLbar.Ga[mu].DC[QL, mu] + LLbar.Ga[mu].DC[LL, mu] + uRbar.Ga[mu].DC[uR, mu] + dRbar.Ga[mu].DC[dR, mu] + lRbar.Ga[mu].DC[lR, mu]), 
+  FlavorExpand->{SU2W,SU2D}]/.{CKM[a_,b_] Conjugate[CKM[a_,c_]]->IndexDelta[b,c], CKM[b_,a_] Conjugate[CKM[c_,a_]]->IndexDelta[b,c]}];
+    
+
+
+
+(**************Ghost terms**************************)
+(* Now we need the ghost terms which are of the form:             *)
+(* - g * antighost * d_BRST G                                     *)
+(* where d_BRST G is BRST transform of the gauge fixing function. *)
+
+LGhost := Block[{LGh1,LGhw,LGhs,LGhphi,mu, generators,gh,ghbar,Vectorize,phix1,phix2,togoldstones,doublet,doublet0},
+  (* Pure gauge piece *) 	
+  LGh1 = -ghBbar.del[DC[ghB,mu],mu];
+  LGhw = -ghWibar.del[DC[ghWi,mu],mu];
+  LGhs = -ghGbar.del[DC[ghG,mu],mu];
+
+  (* Scalar pieces: see Peskin pages 739-742 *)
+  (* phix1 and phix2 are the real degrees of freedom of GP *)
+  (* Vectorize transforms a doublet in a vector in the phi-basis, i.e. the basis of real degrees of freedom *)
+  gh    = {ghB, ghWi[1], ghWi[2], ghWi[3]};
+  ghbar = {ghBbar, ghWibar[1], ghWibar[2], ghWibar[3]};
+  generators = {-I/2 g1 IdentityMatrix[2], -I/2 gw PauliSigma[1], -I/2 gw PauliSigma[2], -I/2 gw PauliSigma[3]};
+  doublet = Expand[{(-I phix1 - phix2)/Sqrt[2], Phi1[2]} /. MR$Definitions /. vev -> 0]; 
+  doublet0 = {0, vev/Sqrt[2]};
+  Vectorize[{a_, b_}]:= Simplify[{Sqrt[2] Re[Expand[a]], Sqrt[2] Im[Expand[a]], Sqrt[2] Re[Expand[b]], Sqrt[2] Im[Expand[b]]}/.{Im[_]->0, Re[num_]->num}];
+  togoldstones := {phix1 -> (GP + GPbar)/Sqrt[2], phix2 -> (-GP + GPbar)/(I Sqrt[2])};
+  LGhphi=Plus@@Flatten[Table[-ghbar[[kkk]].gh[[lll]] Vectorize[generators[[kkk]].doublet0].Vectorize[generators[[lll]].(doublet+doublet0)],{kkk,4},{lll,4}]] /.togoldstones;
+
+ExpandIndices[ LGhs + If[FeynmanGauge, LGh1 + LGhw + LGhphi,0], FlavorExpand->SU2W]];
+
+	
+(*Higgs sectors*)
+
+ 
+LHiggs := Block[{ii,mu, feynmangaugerules,V2HDM,LHiggsKin},
+  feynmangaugerules = If[Not[FeynmanGauge], {G0|GP|GPbar ->0}, {}];  
+  
+  P11 := Module[{jj},Phi1bar[jj] Phi1[jj]];
+  P12 := Module[{jj},Phi1bar[jj] Phi2[jj]];
+  P21 := Module[{jj},Phi2bar[jj] Phi1[jj]];
+  P22 := Module[{jj},Phi2bar[jj] Phi2[jj]];
+  
+  V2HDM := mu1 P11 +mu2 P22 +mu3 P12 +Conjugate[mu3] P21 + 
+    l1 P11*P11 + l2 P22*P22 + l3 P11 P22 + l4 P12 P21 + l5 P12*P12 + 
+    Conjugate[l5] P21*P21 + P11 (l6 P12+ Conjugate[l6] P21) +  P22 (l7 P12+ Conjugate[l7]P21);
+    
+  LHiggsKin := DC[Phi1bar[ii],mu] DC[Phi1[ii],mu]+DC[Phi2bar[ii],mu] DC[Phi2[ii],mu];
+ 
+  ExpandIndices[LHiggsKin - V2HDM, FlavorExpand->{SU2D,SU2W}]/.feynmangaugerules
+ ];
+
+
+LYukawa := Block[{sp,ii,jj,cc,ff1,ff2,ff3,yuk,yuk1,yuk2,feynmangaugerules},
+  feynmangaugerules = If[Not[FeynmanGauge], {G0|GP|GPbar ->0}, {}];
+ 
+  yuk1 = ExpandIndices[
+   -yd[ff2, ff3] CKM[ff1, ff2] QLbar[sp, ii, ff1, cc].dR [sp, ff3, cc] Phi1[ii] - 
+    yl[ff1, ff3] LLbar[sp, ii, ff1].lR [sp, ff3] Phi1[ii] - 
+    yu[ff1, ff2] QLbar[sp, ii, ff1, cc].uR [sp, ff2, cc] Phi1bar[jj] Eps[ii, jj], FlavorExpand -> SU2D];
+  yuk1 = yuk1 /. { CKM[a_, b_] Conjugate[CKM[a_, c_]] -> IndexDelta[b, c], CKM[b_, a_] Conjugate[CKM[c_, a_]] -> IndexDelta[b, c]};
+ 
+  yuk2 = ExpandIndices[
+   -GD[ff2, ff3] CKM[ff1, ff2] QLbar[sp, ii, ff1, cc].dR [sp, ff3, cc] Phi2[ii] - 
+    GL[ff1, ff3] LLbar[sp, ii, ff1].lR [sp, ff3] Phi2[ii] - 
+    GU[ff1, ff2] QLbar[sp, ii, ff1, cc].uR [sp, ff2, cc] Phi2bar[jj] Eps[ii, jj], FlavorExpand -> SU2D];
+  yuk2 = yuk2 /. { CKM[a_, b_] Conjugate[CKM[a_, c_]] -> IndexDelta[b, c], CKM[b_, a_] Conjugate[CKM[c_, a_]] -> IndexDelta[b, c]};
+  
+  yuk=yuk1+yuk2;
+  yuk+HC[yuk]/.feynmangaugerules
+ ];
+		
+		
+L2HDM := LGauge + LFermions + LHiggs + LYukawa + LGhost;
